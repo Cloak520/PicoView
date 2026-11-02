@@ -72,15 +72,19 @@
   }
 
   function handleMouseDown(e: MouseEvent) {
-    if (e.button === 0 && zoom > 1) {
-      isDragging = true
-      startX = e.clientX - panX
-      startY = e.clientY - panY
+    if (e.button === 0) {
+      e.preventDefault()
+      if (zoom > 1) {
+        isDragging = true
+        startX = e.clientX - panX
+        startY = e.clientY - panY
+      }
     }
   }
 
   function handleMouseMove(e: MouseEvent) {
     if (isDragging) {
+      e.preventDefault()
       panX = e.clientX - startX
       panY = e.clientY - startY
     }
@@ -231,17 +235,24 @@
   </div>
 
   <!-- Main Viewport Canvas -->
-  <div class="relative w-full h-full flex items-center justify-center overflow-hidden">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="relative w-full h-full flex items-center justify-center overflow-hidden"
+    ondblclick={handleDoubleClick}
+    ondragstart={(e) => e.preventDefault()}
+    style="cursor: {zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'};"
+  >
     {#if currentItem}
       <img
         src={toAssetUrl(currentItem.path)}
         alt={currentItem.filename}
-        ondblclick={handleDoubleClick}
         draggable="false"
-        class="max-w-full max-h-full object-contain pointer-events-auto transition-transform duration-75 select-none"
+        ondragstart={(e) => e.preventDefault()}
+        class="max-w-full max-h-full object-contain pointer-events-none transition-transform duration-75 select-none"
         style="
+          -webkit-user-drag: none;
+          user-select: none;
           transform: translate({panX}px, {panY}px) scale({zoom}) rotate({rotation}deg);
-          cursor: {zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'};
         "
       />
     {:else}

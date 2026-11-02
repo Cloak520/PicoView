@@ -35,3 +35,19 @@ export interface ImageRecipe {
   saturation: number
   is_starred: boolean
 }
+
+export type OpenTargetResult =
+  | {
+      type: 'Folder'
+      data: {
+        folder_path: string
+        items: MediaItem[]
+      }
+    }
+  | {
+      type: 'SinglePhoto'
+      data: {
+        siblings: MediaItem[]
+        current_index: number
+      }
+    }

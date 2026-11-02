@@ -1,4 +1,4 @@
-import type { ExifData, MediaItem } from './types'
+import type { ExifData, MediaItem, OpenTargetResult } from './types'
 
 // Check if running inside Tauri
 export const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
@@ -24,6 +24,10 @@ export function toAssetUrl(filePath: string): string {
     return `asset://localhost/${encodeURIComponent(filePath)}`
   }
   return filePath
+}
+
+export async function openTargetPath(targetPath: string): Promise<OpenTargetResult> {
+  return invokeCommand<OpenTargetResult>('open_target_path', { targetPath })
 }
 
 export async function scanFolder(folderPath: string): Promise<MediaItem[]> {

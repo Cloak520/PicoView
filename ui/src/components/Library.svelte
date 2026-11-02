@@ -1,16 +1,21 @@
 <script lang="ts">
   import type { MediaItem } from '../lib/types'
-  import { scanFolder, toAssetUrl } from '../lib/api'
+  import { toAssetUrl } from '../lib/api'
 
   let {
+    items = $bindable([]),
+    currentFolderPath = $bindable(''),
+    isLoading = false,
     onSelectPhoto,
+    onOpenPath,
   }: {
+    items: MediaItem[]
+    currentFolderPath: string
+    isLoading?: boolean
     onSelectPhoto: (items: MediaItem[], index: number) => void
+    onOpenPath: (path: string) => void
   } = $props()
 
-  let currentFolderPath = $state<string>('')
-  let items = $state<MediaItem[]>([])
-  let isLoading = $state(false)
   let filterStarred = $state(false)
   let searchQuery = $state('')
   let thumbSize = $state(180) // 120px to 320px
@@ -25,6 +30,29 @@
     })
   )
 
+  async function handleOpenSingleImage() {
+    try {
+      const { open } = await import('@tauri-apps/plugin-dialog')
+      const selected = await open({
+        multiple: false,
+        directory: false,
+        filters: [
+          {
+            name: '图片文件',
+            extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tiff', 'tif', 'avif'],
+          },
+        ],
+        title: '选择图片文件',
+      })
+      if (selected && typeof selected === 'string') {
+        onOpenPath(selected)
+      }
+    } catch {
+      const path = prompt('请输入本地图片绝对路径:')
+      if (path) onOpenPath(path)
+    }
+  }
+
   async function handleOpenFolder() {
     try {
       const { open } = await import('@tauri-apps/plugin-dialog')
@@ -34,30 +62,12 @@
         title: '选择图片文件夹',
       })
       if (selected && typeof selected === 'string') {
-        loadFolder(selected)
+        onOpenPath(selected)
       }
     } catch {
-      // Fallback prompt for browser dev testing
       const path = prompt('请输入本地文件夹绝对路径 (例如 /Users/username/Pictures):')
-      if (path) loadFolder(path)
+      if (path) onOpenPath(path)
     }
-  }
-
-  async function loadFolder(path: string) {
-    isLoading = true
-    currentFolderPath = path
-    try {
-      items = await scanFolder(path)
-    } catch (err) {
-      alert(`无法扫描文件夹: ${err}`)
-    } finally {
-      isLoading = false
-    }
-  }
-
-  function handleDrop(e: DragEvent) {
-    e.preventDefault()
-    // Support drag and drop folder
   }
 </script>
 
@@ -97,8 +107,8 @@
     </div>
 
     <!-- Actions & Thumbnail Size Slider -->
-    <div class="flex items-center gap-4">
-      <div class="flex items-center gap-2">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 mr-1">
         <span class="text-[11px] text-neutral-500">网格</span>
         <input
           type="range"
@@ -106,10 +116,23 @@
           max="320"
           step="10"
           bind:value={thumbSize}
-          class="w-24 accent-blue-500 h-1 bg-neutral-800 rounded-lg cursor-pointer"
+          class="w-20 accent-blue-500 h-1 bg-neutral-800 rounded-lg cursor-pointer"
         />
       </div>
 
+      <!-- Open Single Photo -->
+      <button
+        onclick={handleOpenSingleImage}
+        class="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700/70 text-white text-xs font-medium transition flex items-center gap-1.5"
+        title="选择单张图片打开并进入看图模式"
+      >
+        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        打开图片
+      </button>
+
+      <!-- Open Folder -->
       <button
         onclick={handleOpenFolder}
         class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium shadow-sm transition flex items-center gap-1.5"
@@ -134,27 +157,41 @@
   {/if}
 
   <!-- Main Content Grid -->
-  <main class="flex-1 overflow-y-auto p-5" ondragover={(e) => e.preventDefault()} ondrop={handleDrop}>
+  <main class="flex-1 overflow-y-auto p-5">
     {#if isLoading}
       <div class="h-full flex flex-col items-center justify-center gap-3 text-neutral-500">
         <div class="w-8 h-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
         <span class="text-xs">正在极速扫描与索引照片...</span>
       </div>
     {:else if items.length === 0}
-      <div class="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto">
-        <div class="w-16 h-16 rounded-2xl bg-neutral-800/60 border border-neutral-700/40 flex items-center justify-center text-neutral-500 mb-4">
+      <div class="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto">
+        <div class="w-16 h-16 rounded-2xl bg-neutral-800/60 border border-neutral-700/40 flex items-center justify-center text-neutral-400 mb-4 shadow-inner">
           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <h3 class="text-sm font-semibold text-neutral-200 mb-1">开始探索你的本地照片</h3>
-        <p class="text-xs text-neutral-500 mb-5">点击上方“打开文件夹”，秒级载入与平滑浏览任意照片目录</p>
-        <button
-          onclick={handleOpenFolder}
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition"
-        >
-          选择图片目录
-        </button>
+        <h3 class="text-sm font-semibold text-neutral-200 mb-1">开始探索你的照片</h3>
+        <p class="text-xs text-neutral-400 mb-6">可直接拖拽单张图片或相册文件夹到窗口，或点击下方按钮打开：</p>
+        <div class="flex items-center gap-3">
+          <button
+            onclick={handleOpenSingleImage}
+            class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white rounded-lg text-xs font-medium transition flex items-center gap-2"
+          >
+            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            打开单张图片
+          </button>
+          <button
+            onclick={handleOpenFolder}
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            选择图片目录
+          </button>
+        </div>
       </div>
     {:else}
       <!-- Photo Grid -->
@@ -176,7 +213,7 @@
                 src={toAssetUrl(item.path)}
                 alt={item.filename}
                 loading="lazy"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 pointer-events-none"
               />
 
               <!-- Star Badge -->

@@ -1,9 +1,53 @@
 use std::path::Path;
 use picoview_core::{ExifData, ExifParser, MediaItem, Scanner, ThumbnailGenerator};
+use serde::Serialize;
 
 // State holder for PicoView
 pub struct AppState {
     pub thumb_gen: ThumbnailGenerator,
+}
+
+#[derive(Serialize)]
+#[serde(tag = "type", content = "data")]
+pub enum OpenTarget {
+    Folder {
+        folder_path: String,
+        items: Vec<MediaItem>,
+    },
+    SinglePhoto {
+        siblings: Vec<MediaItem>,
+        current_index: usize,
+    },
+}
+
+#[tauri::command]
+fn open_target_path(target_path: String) -> Result<OpenTarget, String> {
+    let path = Path::new(&target_path);
+    if !path.exists() {
+        return Err(format!("路径不存在: {}", target_path));
+    }
+
+    if path.is_dir() {
+        let items = Scanner::scan_folder_siblings(path).map_err(|e| e.to_string())?;
+        Ok(OpenTarget::Folder {
+            folder_path: target_path,
+            items,
+        })
+    } else if Scanner::is_image_file(path) {
+        let parent = path.parent().ok_or_else(|| "无法获取上级目录".to_string())?;
+        let siblings = Scanner::scan_folder_siblings(parent).map_err(|e| e.to_string())?;
+        let norm_target = path.to_string_lossy().to_string();
+        let current_index = siblings
+            .iter()
+            .position(|it| it.path == norm_target)
+            .unwrap_or(0);
+        Ok(OpenTarget::SinglePhoto {
+            siblings,
+            current_index,
+        })
+    } else {
+        Err("不支持的文件类型，仅支持常见图片或文件夹".to_string())
+    }
 }
 
 #[tauri::command]
@@ -56,6 +100,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .manage(AppState { thumb_gen })
         .invoke_handler(tauri::generate_handler![
+            open_target_path,
             scan_folder,
             get_sibling_photos,
             get_exif_data,
