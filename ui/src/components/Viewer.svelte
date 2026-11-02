@@ -15,7 +15,11 @@
     onClose: () => void
   } = $props()
 
-  let activeIndex = $state(currentIndex)
+  let activeIndex = $state(0)
+
+  $effect(() => {
+    activeIndex = currentIndex
+  })
   let zoom = $state(1)
   let rotation = $state(0)
   let panX = $state(0)
@@ -191,6 +195,7 @@
   })
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="relative w-full h-full bg-[#121214] flex flex-col justify-between overflow-hidden select-none"
   onwheel={handleWheel}
