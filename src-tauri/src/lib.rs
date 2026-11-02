@@ -1,6 +1,5 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use picoview_core::{ExifData, ExifParser, MediaItem, Scanner, ThumbnailGenerator};
-use tauri::Manager;
 
 // State holder for PicoView
 pub struct AppState {

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
-use image::{DynamicImage, ImageFormat};
+use image::ImageFormat;
 
 pub struct ThumbnailGenerator {
     cache_dir: PathBuf,

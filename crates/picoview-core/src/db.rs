@@ -2,7 +2,7 @@ use std::path::Path;
 use anyhow::Result;
 use rusqlite::{params, Connection};
 
-use crate::models::{FolderItem, ImageRecipe, MediaItem};
+use crate::models::MediaItem;
 
 pub struct Database {
     conn: Connection,

@@ -1,7 +1,7 @@
 use std::path::Path;
 use anyhow::{Context, Result};
 use image::imageops::FilterType;
-use image::{DynamicImage, GenericImageView, ImageReader};
+use image::{DynamicImage, ImageReader};
 
 pub struct Decoder;
 
