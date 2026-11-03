@@ -32,15 +32,62 @@
   let showFilmstrip = $state(false)
   let isImageLoaded = $state(false)
   let exifData = $state<ExifData | null>(null)
+  let viewportWidth = $state(0)
+  let viewportHeight = $state(0)
+  let imgNaturalWidth = $state(0)
+  let imgNaturalHeight = $state(0)
 
+  // Sync activeIndex with parent currentIndex prop
   $effect(() => {
     activeIndex = currentIndex
+  })
+
+  // When activeIndex changes, reset load state and initialize dimensions
+  $effect(() => {
+    const item = items[activeIndex]
     isImageLoaded = false
+    imgNaturalWidth = item?.width ?? 0
+    imgNaturalHeight = item?.height ?? 0
   })
 
   const currentItem = $derived(items[activeIndex])
   const prevItem = $derived(activeIndex > 0 ? items[activeIndex - 1] : null)
   const nextItem = $derived(activeIndex < items.length - 1 ? items[activeIndex + 1] : null)
+
+  const isRotated90 = $derived(Math.abs(rotation % 180) === 90)
+
+  // Reactive dimension display string for Top Bar (accurately reflects 90/270deg rotation)
+  const displayDimensions = $derived.by(() => {
+    const w = imgNaturalWidth || currentItem?.width || 0
+    const h = imgNaturalHeight || currentItem?.height || 0
+    if (!w || !h) return ''
+    if (isRotated90) {
+      return `${h} × ${w}`
+    }
+    return `${w} × ${h}`
+  })
+
+  // Auto-fit scale when rotated 90/270 degrees so the image never overflows safe boundaries
+  const rotScale = $derived.by(() => {
+    if (!isRotated90 || !imgNaturalWidth || !imgNaturalHeight || !viewportWidth || !viewportHeight) {
+      return 1
+    }
+    // Available safe content dimensions (inside padding)
+    const availW = Math.max(viewportWidth - 48, 100)
+    const safeBottom = showFilmstrip && items.length > 1 ? 168 : 88
+    const availH = Math.max(viewportHeight - 56 - safeBottom, 100)
+
+    const scaleW = availW / imgNaturalWidth
+    const scaleH = availH / imgNaturalHeight
+    const unrotatedScale = Math.min(scaleW, scaleH, 1)
+    const displayedW = imgNaturalWidth * unrotatedScale
+    const displayedH = imgNaturalHeight * unrotatedScale
+
+    // When rotated 90deg, visual width is displayedH, visual height is displayedW
+    const maxScaleW = availW / displayedH
+    const maxScaleH = availH / displayedW
+    return Math.min(maxScaleW, maxScaleH, 1)
+  })
 
   function resetViewport(resetRotation = false) {
     zoom = 1
@@ -248,7 +295,7 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-  class="relative w-full h-full bg-[#121214] flex flex-col justify-between overflow-hidden select-none"
+  class="relative w-full h-full overflow-hidden select-none bg-transparent"
   onwheel={handleWheel}
   onmousedown={handleMouseDown}
   onmousemove={handleMouseMove}
@@ -276,7 +323,9 @@
     <div class="flex items-center gap-4 text-xs text-neutral-400 font-mono pointer-events-auto">
       {#if currentItem}
         <span>{activeIndex + 1} / {items.length}</span>
-        <span>{currentItem.width} × {currentItem.height}</span>
+        {#if displayDimensions}
+          <span>{displayDimensions}</span>
+        {/if}
       {/if}
       <button
         onclick={onClose}
@@ -293,10 +342,19 @@
   <!-- Main Viewport Canvas -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="relative w-full h-full flex items-center justify-center overflow-hidden"
+    bind:clientWidth={viewportWidth}
+    bind:clientHeight={viewportHeight}
+    class="relative w-full h-full flex items-center justify-center overflow-hidden transition-all duration-200"
+    style="
+      padding-top: 56px;
+      padding-bottom: {showFilmstrip && items.length > 1 ? '168px' : '88px'};
+      padding-left: 24px;
+      padding-right: 24px;
+      box-sizing: border-box;
+      cursor: {zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'};
+    "
     ondblclick={handleDoubleClick}
     ondragstart={(e) => e.preventDefault()}
-    style="cursor: {zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'};"
   >
     {#if currentItem}
       <img
@@ -306,18 +364,20 @@
         ondragstart={(e) => e.preventDefault()}
         onload={(e) => {
           isImageLoaded = true
-          if (currentItem && (!currentItem.width || !currentItem.height)) {
+          imgNaturalWidth = e.currentTarget.naturalWidth
+          imgNaturalHeight = e.currentTarget.naturalHeight
+          if (currentItem) {
             currentItem.width = e.currentTarget.naturalWidth
             currentItem.height = e.currentTarget.naturalHeight
           }
         }}
-        class="max-w-full max-h-full object-contain pointer-events-none select-none transition-opacity duration-150 {isImageLoaded ? 'opacity-100' : 'opacity-0'}"
+        class="max-w-full max-h-full min-w-0 min-h-0 object-contain pointer-events-none select-none transition-opacity duration-150 {isImageLoaded ? 'opacity-100' : 'opacity-0'}"
         style="
           -webkit-user-drag: none;
           user-select: none;
           -webkit-user-select: none;
           will-change: transform;
-          transform: translate3d({panX}px, {panY}px, 0) scale({zoom}) rotate({rotation}deg);
+          transform: translate3d({panX}px, {panY}px, 0) scale({zoom * rotScale}) rotate({rotation}deg);
           transition: {isDragging ? 'none' : 'transform 0.15s cubic-bezier(0, 0, 0.2, 1)'};
         "
       />
