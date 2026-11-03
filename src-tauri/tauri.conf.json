@@ -13,14 +13,13 @@
     "windows": [
       {
         "title": "PicoView",
-        "fullscreen": true,
-        "width": 1280,
-        "height": 840,
-        "minWidth": 640,
-        "minHeight": 480,
-        "decorations": true,
-        "center": true,
-        "backgroundColor": "#121214"
+        "fullscreen": false,
+        "width": 1920,
+        "height": 1080,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "center": true
       }
     ],
     "security": {

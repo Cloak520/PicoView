@@ -92,17 +92,55 @@ fn delete_to_trash(photo_path: String) -> Result<(), String> {
     trash::delete(&photo_path).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-fn toggle_fullscreen(window: tauri::Window) -> Result<bool, String> {
-    let is_fs = window.is_fullscreen().map_err(|e| e.to_string())?;
-    window.set_fullscreen(!is_fs).map_err(|e| e.to_string())?;
-    Ok(!is_fs)
+pub fn fit_window_to_monitor(window: &tauri::WebviewWindow) {
+    let monitor = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| window.primary_monitor().ok().flatten());
+    if let Some(monitor) = monitor {
+        let size = monitor.size();
+        let pos = monitor.position();
+        let _ = window.set_position(tauri::Position::Physical(*pos));
+        let _ = window.set_size(tauri::Size::Physical(*size));
+    }
 }
 
 #[tauri::command]
-fn set_fullscreen(window: tauri::Window, fullscreen: bool) -> Result<(), String> {
-    window.set_fullscreen(fullscreen).map_err(|e| e.to_string())?;
-    Ok(())
+fn fit_to_screen(window: tauri::WebviewWindow) {
+    fit_window_to_monitor(&window);
+    let _ = window.set_focus();
+}
+
+#[tauri::command]
+fn toggle_fullscreen(window: tauri::WebviewWindow) -> Result<bool, String> {
+    #[cfg(target_os = "macos")]
+    {
+        fit_window_to_monitor(&window);
+        Ok(true)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let is_fs = window.is_fullscreen().map_err(|e| e.to_string())?;
+        window.set_fullscreen(!is_fs).map_err(|e| e.to_string())?;
+        Ok(!is_fs)
+    }
+}
+
+#[tauri::command]
+fn set_fullscreen(window: tauri::WebviewWindow, fullscreen: bool) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        if fullscreen {
+            fit_window_to_monitor(&window);
+        }
+        Ok(())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        window.set_fullscreen(fullscreen).map_err(|e| e.to_string())?;
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -150,7 +188,14 @@ pub fn run() {
             thumb_gen,
             pending_file: Mutex::new(None),
         })
+        .setup(|app| {
+            if let Some(window) = app.get_webview_window("main") {
+                fit_window_to_monitor(&window);
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
+            fit_to_screen,
             toggle_fullscreen,
             set_fullscreen,
             exit_app,
@@ -176,6 +221,11 @@ pub fn run() {
                         if let Ok(mut lock) = state.pending_file.lock() {
                             *lock = Some(path_str.clone());
                         }
+                    }
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        fit_window_to_monitor(&window);
+                        let _ = window.show();
+                        let _ = window.set_focus();
                     }
                     let _ = app_handle.emit("open-file", path_str);
                 }

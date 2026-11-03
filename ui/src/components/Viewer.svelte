@@ -287,6 +287,15 @@
         <span>{activeIndex + 1} / {items.length}</span>
         <span>{currentItem.width} × {currentItem.height}</span>
       {/if}
+      <button
+        onclick={onClose}
+        class="text-neutral-400 hover:text-white p-1 rounded-md hover:bg-white/10 transition"
+        title={isExternalOpen ? '关闭应用 (Esc)' : '关闭 (Esc)'}
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   </div>
 

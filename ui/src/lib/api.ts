@@ -57,3 +57,7 @@ export async function toggleFullscreen(): Promise<boolean> {
 export async function setFullscreen(fullscreen: boolean): Promise<void> {
   return invokeCommand<void>('set_fullscreen', { fullscreen })
 }
+
+export async function fitToScreen(): Promise<void> {
+  return invokeCommand<void>('fit_to_screen')
+}

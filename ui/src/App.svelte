@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import type { MediaItem } from './lib/types'
-  import { exitApp, getInitialTarget, isTauri, openTargetPath, setFullscreen } from './lib/api'
+  import { exitApp, fitToScreen, getInitialTarget, isTauri, openTargetPath } from './lib/api'
   import Welcome, { type RecentItem } from './components/Welcome.svelte'
   import Viewer from './components/Viewer.svelte'
   import type { OpenTargetResult } from './lib/types'
@@ -52,7 +52,7 @@
         addRecent(current.path, current.filename)
       }
       if (isExternalOpen) {
-        setFullscreen(true).catch(() => {})
+        fitToScreen().catch(() => {})
       }
     } else if (res.type === 'Folder') {
       if (res.data.items.length > 0) {
@@ -162,7 +162,8 @@
 </script>
 
 <div
-  class="relative w-full h-full overflow-hidden bg-[#121214]"
+  class="relative w-full h-full overflow-hidden select-none"
+  style="background-color: rgba(13, 13, 16, 0.90); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
   ondragover={(e) => {
     e.preventDefault()
     isDragOver = true

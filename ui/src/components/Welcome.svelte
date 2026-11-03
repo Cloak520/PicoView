@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { toAssetUrl } from '../lib/api'
+  import { exitApp, toAssetUrl } from '../lib/api'
 
   export interface RecentItem {
     path: string
@@ -30,9 +30,32 @@
     const days = Math.floor(hours / 24)
     return `${days} 天前`
   }
+
+  onMount(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        exitApp()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  })
 </script>
 
 <div class="relative w-full h-full flex flex-col items-center justify-center p-8 select-none text-neutral-300">
+  <!-- Top Right Close Button -->
+  <button
+    onclick={() => exitApp()}
+    class="absolute top-5 right-5 p-2 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition z-20"
+    title="退出应用 (Esc)"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  </button>
   <!-- Minimalist Centered Card -->
   <div class="flex flex-col items-center max-w-lg w-full text-center">
     <!-- Picasa-style colorful aperture logo icon -->
