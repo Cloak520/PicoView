@@ -42,17 +42,19 @@
   const prevItem = $derived(activeIndex > 0 ? items[activeIndex - 1] : null)
   const nextItem = $derived(activeIndex < items.length - 1 ? items[activeIndex + 1] : null)
 
-  function resetViewport() {
+  function resetViewport(resetRotation = false) {
     zoom = 1
-    rotation = 0
     panX = 0
     panY = 0
+    if (resetRotation) {
+      rotation = 0
+    }
   }
 
   function nextPhoto() {
     if (activeIndex < items.length - 1) {
       activeIndex++
-      resetViewport()
+      resetViewport(true)
       loadExif()
     }
   }
@@ -60,7 +62,7 @@
   function prevPhoto() {
     if (activeIndex > 0) {
       activeIndex--
-      resetViewport()
+      resetViewport(true)
       loadExif()
     }
   }
@@ -110,7 +112,7 @@
     if (zoom === 1) {
       zoom = 2.5
     } else {
-      resetViewport()
+      resetViewport(false)
     }
   }
 
@@ -157,9 +159,9 @@
       case 'R':
         e.preventDefault()
         if (e.shiftKey) {
-          rotation = (rotation - 90) % 360
+          rotation -= 90
         } else {
-          rotation = (rotation + 90) % 360
+          rotation += 90
         }
         break
       case 't':
@@ -377,7 +379,7 @@
         {activeIndex}
         onSelect={(idx) => {
           activeIndex = idx
-          resetViewport()
+          resetViewport(true)
           loadExif()
         }}
       />
@@ -400,9 +402,9 @@
           panY = 0
         }
       }}
-      onZoomReset={resetViewport}
-      onRotateLeft={() => (rotation = (rotation - 90) % 360)}
-      onRotateRight={() => (rotation = (rotation + 90) % 360)}
+      onZoomReset={() => resetViewport(false)}
+      onRotateLeft={() => (rotation -= 90)}
+      onRotateRight={() => (rotation += 90)}
       onToggleExif={() => {
         showExif = !showExif
         if (showExif) loadExif()
