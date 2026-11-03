@@ -4,6 +4,7 @@
     rotation = 0,
     isStarred = false,
     showExif = false,
+    showFilmstrip = false,
     onZoomIn,
     onZoomOut,
     onZoomReset,
@@ -11,13 +12,15 @@
     onRotateRight,
     onToggleStar,
     onToggleExif,
+    onToggleFilmstrip,
     onDelete,
-    onBackToLibrary,
+    onClose,
   }: {
     zoom: number
     rotation: number
     isStarred: boolean
     showExif: boolean
+    showFilmstrip: boolean
     onZoomIn: () => void
     onZoomOut: () => void
     onZoomReset: () => void
@@ -25,20 +28,21 @@
     onRotateRight: () => void
     onToggleStar: () => void
     onToggleExif: () => void
+    onToggleFilmstrip: () => void
     onDelete: () => void
-    onBackToLibrary: () => void
+    onClose: () => void
   } = $props()
 </script>
 
-<div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-2 bg-neutral-900/85 backdrop-blur-xl border border-neutral-700/50 rounded-full shadow-2xl z-40 text-neutral-300">
-  <!-- Back to Library -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 bg-neutral-900/85 backdrop-blur-xl border border-neutral-700/50 rounded-full shadow-2xl z-40 text-neutral-300">
+  <!-- Exit / Back button -->
   <button
-    onclick={onBackToLibrary}
-    title="返回相册网格 (Esc / L)"
+    onclick={onClose}
+    title="退出浏览 (Esc)"
     class="p-2 hover:bg-neutral-800 rounded-full hover:text-white transition"
   >
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
     </svg>
   </button>
 
@@ -97,6 +101,17 @@
   </button>
 
   <div class="w-[1px] h-4 bg-neutral-700/60 mx-1"></div>
+
+  <!-- Toggle Filmstrip Thumbnail Drawer -->
+  <button
+    onclick={onToggleFilmstrip}
+    title="缩略图胶片导轨 (T)"
+    class="p-2 hover:bg-neutral-800 rounded-full transition {showFilmstrip ? 'text-blue-400 bg-neutral-800' : 'hover:text-white'}"
+  >
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+    </svg>
+  </button>
 
   <!-- Star Favorite -->
   <button

@@ -89,6 +89,11 @@ fn delete_to_trash(photo_path: String) -> Result<(), String> {
     trash::delete(&photo_path).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn get_cli_arg() -> Option<String> {
+    std::env::args().skip(1).find(|arg| !arg.starts_with('-'))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_cache_dir = std::env::temp_dir().join("picoview_cache");
@@ -100,6 +105,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .manage(AppState { thumb_gen })
         .invoke_handler(tauri::generate_handler![
+            get_cli_arg,
             open_target_path,
             scan_folder,
             get_sibling_photos,

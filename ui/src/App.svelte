@@ -1,85 +1,138 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import type { MediaItem } from './lib/types'
-  import { isTauri, openTargetPath } from './lib/api'
-  import Library from './components/Library.svelte'
+  import { invokeCommand, isTauri, openTargetPath } from './lib/api'
+  import Welcome, { type RecentItem } from './components/Welcome.svelte'
   import Viewer from './components/Viewer.svelte'
 
-  let mode = $state<'library' | 'viewer'>('library')
+  const RECENTS_KEY = 'picoview_recent_history'
+
   let photoList = $state<MediaItem[]>([])
   let activeIndex = $state(0)
-
-  // Preserved Library state
-  let libraryItems = $state<MediaItem[]>([])
-  let currentFolderPath = $state<string>('')
-  let isScanning = $state(false)
-
-  // Drag and drop overlay state
+  let recents = $state<RecentItem[]>([])
   let isDragOver = $state(false)
 
-  function handleOpenViewer(items: MediaItem[], index: number) {
-    photoList = items
-    activeIndex = index
-    mode = 'viewer'
+  function loadRecents() {
+    try {
+      const raw = localStorage.getItem(RECENTS_KEY)
+      if (raw) {
+        recents = JSON.parse(raw)
+      }
+    } catch {
+      recents = []
+    }
   }
 
-  function handleCloseViewer() {
-    mode = 'library'
+  function addRecent(path: string, filename: string) {
+    const next = [
+      { path, filename, timestamp: Date.now() },
+      ...recents.filter((r) => r.path !== path),
+    ].slice(0, 12)
+    recents = next
+    try {
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(next))
+    } catch {}
+  }
+
+  function clearRecents() {
+    recents = []
+    try {
+      localStorage.removeItem(RECENTS_KEY)
+    } catch {}
   }
 
   async function handleOpenPath(path: string) {
-    isScanning = true
     try {
       const res = await openTargetPath(path)
       if (res.type === 'SinglePhoto') {
         photoList = res.data.siblings
         activeIndex = res.data.current_index
-        mode = 'viewer'
-        // If library has no folder open yet, populate it with this photo's folder
-        if (libraryItems.length === 0 && res.data.siblings.length > 0) {
-          libraryItems = res.data.siblings
-          currentFolderPath = res.data.siblings[0].parent_dir
+        const current = res.data.siblings[res.data.current_index]
+        if (current) {
+          addRecent(current.path, current.filename)
         }
       } else if (res.type === 'Folder') {
-        libraryItems = res.data.items
-        currentFolderPath = res.data.folder_path
-        mode = 'library'
+        if (res.data.items.length > 0) {
+          photoList = res.data.items
+          activeIndex = 0
+          addRecent(res.data.items[0].path, res.data.items[0].filename)
+        }
       }
     } catch (err) {
-      alert(`无法打开: ${err}`)
-    } finally {
-      isScanning = false
+      alert(`无法打开图片: ${err}`)
+    }
+  }
+
+  async function handlePickFile() {
+    try {
+      const { open } = await import('@tauri-apps/plugin-dialog')
+      const selected = await open({
+        multiple: false,
+        directory: false,
+        filters: [
+          {
+            name: '图片文件',
+            extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tiff', 'tif', 'avif'],
+          },
+        ],
+        title: '选择图片',
+      })
+      if (selected && typeof selected === 'string') {
+        handleOpenPath(selected)
+      }
+    } catch {
+      const path = prompt('请输入本地图片绝对路径:')
+      if (path) handleOpenPath(path)
+    }
+  }
+
+  function handleCloseViewer() {
+    photoList = []
+    activeIndex = 0
+  }
+
+  function handleGlobalKeyDown(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'o' || e.key === 'O')) {
+      e.preventDefault()
+      handlePickFile()
     }
   }
 
   onMount(() => {
-    let unlistenDragDrop: (() => void) | undefined
+    loadRecents()
+    window.addEventListener('keydown', handleGlobalKeyDown)
 
+    // Check CLI argument on launch (e.g. double clicked photo or picoview <file>)
     if (isTauri()) {
+      invokeCommand<string | null>('get_cli_arg')
+        .then((initialArg) => {
+          if (initialArg) {
+            handleOpenPath(initialArg)
+          }
+        })
+        .catch(() => {})
+
+      // Listen for window file drop
       import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-        getCurrentWindow()
-          .onDragDropEvent((event) => {
-            const payload = event.payload
-            if (payload.type === 'over') {
-              isDragOver = true
-            } else if (payload.type === 'leave') {
-              isDragOver = false
-            } else if (payload.type === 'drop') {
-              isDragOver = false
-              const paths = (payload as any).paths
-              if (paths && paths.length > 0) {
-                handleOpenPath(paths[0])
-              }
+        getCurrentWindow().onDragDropEvent((event) => {
+          const payload = event.payload
+          if (payload.type === 'over') {
+            isDragOver = true
+          } else if (payload.type === 'leave') {
+            isDragOver = false
+          } else if (payload.type === 'drop') {
+            isDragOver = false
+            const paths = (payload as any).paths
+            if (paths && paths.length > 0) {
+              handleOpenPath(paths[0])
             }
-          })
-          .then((unlisten) => {
-            unlistenDragDrop = unlisten
-          })
+          }
+        })
       })
     }
 
     return () => {
-      unlistenDragDrop?.()
+      window.removeEventListener('keydown', handleGlobalKeyDown)
     }
   })
 </script>
@@ -99,32 +152,26 @@
     isDragOver = false
   }}
   role="region"
-  aria-label="PicoView Main"
+  aria-label="PicoView"
 >
-  <!-- Library View: permanently kept in layout tree so scroll and thumbnails are warm with ZERO ESC lag -->
-  <div
-    class="w-full h-full"
-    class:pointer-events-none={mode === 'viewer'}
-    aria-hidden={mode === 'viewer'}
-  >
-    <Library
-      bind:items={libraryItems}
-      bind:currentFolderPath
-      isLoading={isScanning}
-      onSelectPhoto={handleOpenViewer}
-      onOpenPath={handleOpenPath}
-    />
-  </div>
-
-  <!-- Viewer View: rendered when in viewer mode -->
-  {#if mode === 'viewer'}
-    <div class="fixed inset-0 z-40 bg-[#121214]">
+  {#if photoList.length > 0}
+    <!-- Fullscreen Ultra-Fast Photo Viewer -->
+    <div class="w-full h-full">
       <Viewer
         items={photoList}
         currentIndex={activeIndex}
         onClose={handleCloseViewer}
+        onPickNewPhoto={handlePickFile}
       />
     </div>
+  {:else}
+    <!-- Minimalist Welcome Canvas -->
+    <Welcome
+      {recents}
+      onOpenPhoto={handleOpenPath}
+      onPickFile={handlePickFile}
+      onClearRecents={clearRecents}
+    />
   {/if}
 
   <!-- Drag & Drop Hover Overlay -->
@@ -138,7 +185,7 @@
         </div>
         <div class="text-center">
           <h2 class="text-base font-semibold text-white mb-1">松开鼠标即可打开</h2>
-          <p class="text-xs text-neutral-400">支持拖入单张图片或相册文件夹</p>
+          <p class="text-xs text-neutral-400">直接进入极速看图与胶片导轨模式</p>
         </div>
       </div>
     </div>

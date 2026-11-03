@@ -4,15 +4,18 @@
   import { deleteToTrash, getExifData, toAssetUrl } from '../lib/api'
   import Toolbar from './Toolbar.svelte'
   import ExifPanel from './ExifPanel.svelte'
+  import Filmstrip from './Filmstrip.svelte'
 
   let {
     items = [],
     currentIndex = 0,
     onClose,
+    onPickNewPhoto,
   }: {
     items: MediaItem[]
     currentIndex: number
     onClose: () => void
+    onPickNewPhoto?: () => void
   } = $props()
 
   let activeIndex = $state(0)
@@ -24,6 +27,7 @@
   let startX = $state(0)
   let startY = $state(0)
   let showExif = $state(false)
+  let showFilmstrip = $state(false)
   let exifData = $state<ExifData | null>(null)
 
   $effect(() => {
@@ -91,7 +95,6 @@
   function handleMouseUp() {
     if (isDragging) {
       isDragging = false
-      // If zoomed out to <= 1, smoothly snap back to center
       if (zoom <= 1) {
         panX = 0
         panY = 0
@@ -108,6 +111,13 @@
   }
 
   function handleKeyDown(e: KeyboardEvent) {
+    // Global Cmd+O / Ctrl+O to open a new image
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'o' || e.key === 'O')) {
+      e.preventDefault()
+      onPickNewPhoto?.()
+      return
+    }
+
     switch (e.key) {
       case 'ArrowRight':
       case 'PageDown':
@@ -147,6 +157,11 @@
         } else {
           rotation = (rotation + 90) % 360
         }
+        break
+      case 't':
+      case 'T':
+        e.preventDefault()
+        showFilmstrip = !showFilmstrip
         break
       case 'i':
       case 'I':
@@ -195,6 +210,10 @@
       try {
         await deleteToTrash(currentItem.path)
         items.splice(activeIndex, 1)
+        if (items.length === 0) {
+          onClose()
+          return
+        }
         if (activeIndex >= items.length) {
           activeIndex = Math.max(0, items.length - 1)
         }
@@ -215,7 +234,6 @@
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('mouseup', handleMouseUp)
 
-    // Globally suppress browser HTML5 drag ghosting
     const suppressDrag = (e: DragEvent) => e.preventDefault()
     window.addEventListener('dragstart', suppressDrag)
 
@@ -243,7 +261,7 @@
       <button
         onclick={onClose}
         class="text-neutral-400 hover:text-white p-1 rounded-md hover:bg-white/10 transition"
-        title="返回相册 (Esc)"
+        title="退出浏览 (Esc)"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -331,6 +349,21 @@
     <ExifPanel item={currentItem} exif={exifData} onClose={() => (showExif = false)} />
   {/if}
 
+  <!-- Floating Bottom Filmstrip Thumbnails Drawer -->
+  {#if showFilmstrip && items.length > 1}
+    <div class="fixed bottom-20 left-0 right-0 z-40 transition-all duration-200">
+      <Filmstrip
+        {items}
+        {activeIndex}
+        onSelect={(idx) => {
+          activeIndex = idx
+          resetViewport()
+          loadExif()
+        }}
+      />
+    </div>
+  {/if}
+
   <!-- Bottom Floating Toolbar -->
   {#if currentItem}
     <Toolbar
@@ -338,6 +371,7 @@
       {rotation}
       isStarred={currentItem.is_starred}
       {showExif}
+      {showFilmstrip}
       onZoomIn={() => (zoom = Math.min(zoom * 1.25, 15))}
       onZoomOut={() => {
         zoom = Math.max(zoom / 1.25, 0.2)
@@ -354,8 +388,9 @@
         showExif = !showExif
         if (showExif) loadExif()
       }}
+      onToggleFilmstrip={() => (showFilmstrip = !showFilmstrip)}
       onDelete={deleteCurrent}
-      onBackToLibrary={onClose}
+      onClose={onClose}
     />
   {/if}
 </div>
