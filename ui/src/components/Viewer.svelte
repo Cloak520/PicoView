@@ -30,10 +30,12 @@
   let startY = $state(0)
   let showExif = $state(false)
   let showFilmstrip = $state(false)
+  let isImageLoaded = $state(false)
   let exifData = $state<ExifData | null>(null)
 
   $effect(() => {
     activeIndex = currentIndex
+    isImageLoaded = false
   })
 
   const currentItem = $derived(items[activeIndex])
@@ -302,7 +304,14 @@
         alt={currentItem.filename}
         draggable="false"
         ondragstart={(e) => e.preventDefault()}
-        class="max-w-full max-h-full object-contain pointer-events-none select-none"
+        onload={(e) => {
+          isImageLoaded = true
+          if (currentItem && (!currentItem.width || !currentItem.height)) {
+            currentItem.width = e.currentTarget.naturalWidth
+            currentItem.height = e.currentTarget.naturalHeight
+          }
+        }}
+        class="max-w-full max-h-full object-contain pointer-events-none select-none transition-opacity duration-150 {isImageLoaded ? 'opacity-100' : 'opacity-0'}"
         style="
           -webkit-user-drag: none;
           user-select: none;
@@ -312,6 +321,11 @@
           transition: {isDragging ? 'none' : 'transform 0.15s cubic-bezier(0, 0, 0.2, 1)'};
         "
       />
+      {#if !isImageLoaded}
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="w-6 h-6 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
+      {/if}
     {:else}
       <div class="text-neutral-500 text-sm">没有选中的图片</div>
     {/if}

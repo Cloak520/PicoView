@@ -2,7 +2,6 @@ use std::path::Path;
 use anyhow::Result;
 use jwalk::WalkDir;
 
-use crate::decoder::Decoder;
 use crate::models::MediaItem;
 
 const SUPPORTED_EXTENSIONS: &[&str] = &[
@@ -77,8 +76,7 @@ impl Scanner {
             .ok()?
             .as_millis() as u64;
 
-        // Quick dimension check
-        let (width, height) = Decoder::probe_dimensions(path).unwrap_or((0, 0));
+        // Fast metadata extraction: width & height are filled in by webview on load
         let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
         let mime_type = match ext.as_str() {
             "jpg" | "jpeg" => "image/jpeg",
@@ -97,8 +95,8 @@ impl Scanner {
             parent_dir,
             size_bytes,
             modified_ms,
-            width,
-            height,
+            width: 0,
+            height: 0,
             mime_type,
             is_starred: false,
             rating: 0,

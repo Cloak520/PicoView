@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import type { MediaItem } from './lib/types'
-  import { exitApp, invokeCommand, isTauri, openTargetPath, setFullscreen } from './lib/api'
+  import { exitApp, getInitialTarget, isTauri, openTargetPath, setFullscreen } from './lib/api'
   import Welcome, { type RecentItem } from './components/Welcome.svelte'
   import Viewer from './components/Viewer.svelte'
+  import type { OpenTargetResult } from './lib/types'
 
   const RECENTS_KEY = 'picoview_recent_history'
 
@@ -42,26 +43,30 @@
     } catch {}
   }
 
+  function applyOpenResult(res: OpenTargetResult) {
+    if (res.type === 'SinglePhoto') {
+      photoList = res.data.siblings
+      activeIndex = res.data.current_index
+      const current = res.data.siblings[res.data.current_index]
+      if (current) {
+        addRecent(current.path, current.filename)
+      }
+      if (isExternalOpen) {
+        setFullscreen(true).catch(() => {})
+      }
+    } else if (res.type === 'Folder') {
+      if (res.data.items.length > 0) {
+        photoList = res.data.items
+        activeIndex = 0
+        addRecent(res.data.items[0].path, res.data.items[0].filename)
+      }
+    }
+  }
+
   async function handleOpenPath(path: string) {
     try {
       const res = await openTargetPath(path)
-      if (res.type === 'SinglePhoto') {
-        photoList = res.data.siblings
-        activeIndex = res.data.current_index
-        const current = res.data.siblings[res.data.current_index]
-        if (current) {
-          addRecent(current.path, current.filename)
-        }
-        if (isExternalOpen) {
-          setFullscreen(true).catch(() => {})
-        }
-      } else if (res.type === 'Folder') {
-        if (res.data.items.length > 0) {
-          photoList = res.data.items
-          activeIndex = 0
-          addRecent(res.data.items[0].path, res.data.items[0].filename)
-        }
-      }
+      applyOpenResult(res)
     } catch (err) {
       alert(`无法打开图片: ${err}`)
     }
@@ -110,13 +115,13 @@
     loadRecents()
     window.addEventListener('keydown', handleGlobalKeyDown)
 
-    // Check CLI argument on launch (e.g. double clicked photo or picoview <file>)
+    // Fast single IPC check for initial target file on launch
     if (isTauri()) {
-      invokeCommand<string | null>('get_cli_arg')
-        .then((initialArg) => {
-          if (initialArg) {
+      getInitialTarget()
+        .then((initialTarget) => {
+          if (initialTarget) {
             isExternalOpen = true
-            handleOpenPath(initialArg)
+            applyOpenResult(initialTarget)
           }
         })
         .catch(() => {})

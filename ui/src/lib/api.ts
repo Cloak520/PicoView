@@ -22,6 +22,10 @@ export async function openTargetPath(targetPath: string): Promise<OpenTargetResu
   return invokeCommand<OpenTargetResult>('open_target_path', { targetPath })
 }
 
+export async function getInitialTarget(): Promise<OpenTargetResult | null> {
+  return invokeCommand<OpenTargetResult | null>('get_initial_target')
+}
+
 export async function scanFolder(folderPath: string): Promise<MediaItem[]> {
   return invokeCommand<MediaItem[]>('scan_folder', { folderPath })
 }

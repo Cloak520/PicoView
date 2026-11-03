@@ -120,6 +120,23 @@ fn get_cli_arg(state: tauri::State<AppState>) -> Option<String> {
     std::env::args().skip(1).find(|arg| !arg.starts_with('-'))
 }
 
+#[tauri::command]
+fn get_initial_target(state: tauri::State<AppState>) -> Option<OpenTarget> {
+    let arg = {
+        if let Ok(mut lock) = state.pending_file.lock() {
+            if let Some(path) = lock.take() {
+                Some(path)
+            } else {
+                std::env::args().skip(1).find(|arg| !arg.starts_with('-'))
+            }
+        } else {
+            std::env::args().skip(1).find(|arg| !arg.starts_with('-'))
+        }
+    }?;
+
+    open_target_path(arg).ok()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_cache_dir = std::env::temp_dir().join("picoview_cache");
@@ -138,6 +155,7 @@ pub fn run() {
             set_fullscreen,
             exit_app,
             get_cli_arg,
+            get_initial_target,
             open_target_path,
             scan_folder,
             get_sibling_photos,
