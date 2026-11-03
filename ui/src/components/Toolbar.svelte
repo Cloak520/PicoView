@@ -12,6 +12,7 @@
     onRotateRight,
     onToggleExif,
     onToggleFilmstrip,
+    onCopy,
     onDelete,
     onClose,
   }: {
@@ -27,6 +28,7 @@
     onRotateRight: () => void
     onToggleExif: () => void
     onToggleFilmstrip: () => void
+    onCopy?: () => void
     onDelete: () => void
     onClose: () => void
   } = $props()
@@ -121,6 +123,19 @@
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   </button>
+
+  <!-- Copy to Clipboard -->
+  <button
+    onclick={onCopy}
+    title="复制图片到剪贴板 (Cmd+C)"
+    class="p-2 hover:bg-neutral-800 rounded-full hover:text-white transition"
+  >
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+    </svg>
+  </button>
+
+  <div class="w-[1px] h-4 bg-neutral-700/60 mx-1"></div>
 
   <!-- Delete -->
   <button

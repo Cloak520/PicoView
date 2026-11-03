@@ -62,6 +62,19 @@ fn delete_to_trash(photo_path: String) -> Result<(), String> {
     trash::delete(&photo_path).map_err(|e| e.to_string())
 }
 
+pub fn setup_window_effects(window: &tauri::WebviewWindow) {
+    #[cfg(target_os = "macos")]
+    {
+        use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+        let _ = apply_vibrancy(window, NSVisualEffectMaterial::FullScreenUI, None, None);
+    }
+    #[cfg(target_os = "windows")]
+    {
+        use window_vibrancy::apply_mica;
+        let _ = apply_mica(window, Some(true));
+    }
+}
+
 pub fn fit_window_to_monitor(window: &tauri::WebviewWindow) {
     let monitor = window
         .current_monitor()
@@ -79,7 +92,40 @@ pub fn fit_window_to_monitor(window: &tauri::WebviewWindow) {
 #[tauri::command]
 fn fit_to_screen(window: tauri::WebviewWindow) {
     fit_window_to_monitor(&window);
+    setup_window_effects(&window);
     let _ = window.set_focus();
+}
+
+#[tauri::command]
+fn copy_file_to_clipboard(file_path: String) -> Result<(), String> {
+    let path = Path::new(&file_path);
+    if !path.exists() {
+        return Err("文件不存在".to_string());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let escaped = file_path.replace('"', "\\\"");
+        let script = format!(r#"set the clipboard to (POSIX file "{}")"#, escaped);
+        let _ = std::process::Command::new("osascript")
+            .arg("-e")
+            .arg(script)
+            .status();
+        Ok(())
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let escaped = file_path.replace('\'', "''");
+        let script = format!("Set-Clipboard -Path '{}'", escaped);
+        let _ = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-Command", &script])
+            .status();
+        Ok(())
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -114,6 +160,7 @@ pub fn run() {
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 fit_window_to_monitor(&window);
+                setup_window_effects(&window);
             }
             Ok(())
         })
@@ -124,6 +171,7 @@ pub fn run() {
             open_target_path,
             get_exif_data,
             delete_to_trash,
+            copy_file_to_clipboard,
         ])
         .build(tauri::generate_context!())
         .expect("error while building picoview tauri application");
@@ -141,6 +189,7 @@ pub fn run() {
                     }
                     if let Some(window) = app_handle.get_webview_window("main") {
                         fit_window_to_monitor(&window);
+                        setup_window_effects(&window);
                         let _ = window.show();
                         let _ = window.set_focus();
                     }

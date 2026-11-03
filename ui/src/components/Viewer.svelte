@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import type { ExifData, MediaItem } from '../lib/types'
-  import { deleteToTrash, getExifData, toAssetUrl } from '../lib/api'
+  import { copyImageToClipboard, deleteToTrash, getExifData, toAssetUrl } from '../lib/api'
   import Toolbar from './Toolbar.svelte'
   import ExifPanel from './ExifPanel.svelte'
   import Filmstrip from './Filmstrip.svelte'
@@ -31,6 +31,8 @@
   let showExif = $state(false)
   let showFilmstrip = $state(false)
   let hasImageError = $state(false)
+  let copyToast = $state<string | null>(null)
+  let copyToastTimer: ReturnType<typeof setTimeout> | null = null
   let exifData = $state<ExifData | null>(null)
   let viewportWidth = $state(0)
   let viewportHeight = $state(0)
@@ -165,11 +167,36 @@
     }
   }
 
+  function showToast(msg: string) {
+    copyToast = msg
+    if (copyToastTimer) clearTimeout(copyToastTimer)
+    copyToastTimer = setTimeout(() => {
+      copyToast = null
+    }, 1800)
+  }
+
+  async function copyCurrentImage() {
+    if (!currentItem) return
+    try {
+      await copyImageToClipboard(currentItem.path)
+      showToast('已复制图片到剪贴板')
+    } catch (err) {
+      showToast(`复制失败: ${err}`)
+    }
+  }
+
   function handleKeyDown(e: KeyboardEvent) {
     // Global Cmd+O / Ctrl+O to open a new image
     if ((e.metaKey || e.ctrlKey) && (e.key === 'o' || e.key === 'O')) {
       e.preventDefault()
       onPickNewPhoto?.()
+      return
+    }
+
+    // Copy shortcut: Cmd+C / Ctrl+C
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
+      e.preventDefault()
+      copyCurrentImage()
       return
     }
 
@@ -309,6 +336,33 @@
   role="region"
   aria-label="Photo Viewer"
 >
+  <!-- Ambient Photo Blur Backdrop (Cinema-grade dynamic lighting behind photo) -->
+  {#if currentItem}
+    <div
+      class="absolute inset-0 overflow-hidden pointer-events-none -z-10 select-none"
+      aria-hidden="true"
+    >
+      <img
+        src={toAssetUrl(currentItem.path)}
+        alt=""
+        class="w-full h-full object-cover scale-110 filter blur-[72px] brightness-[0.28] saturate-[1.35] opacity-70 pointer-events-none select-none transition-all duration-300"
+        draggable="false"
+      />
+    </div>
+  {/if}
+
+  <!-- Copy Toast Notification -->
+  {#if copyToast}
+    <div class="fixed top-14 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200">
+      <div class="px-4 py-2 bg-neutral-900/90 text-white text-xs font-medium rounded-full shadow-2xl border border-neutral-700/60 backdrop-blur-md flex items-center gap-2">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>{copyToast}</span>
+      </div>
+    </div>
+  {/if}
+
   <!-- Top Bar (Picasa style minimalist breadcrumb & info) -->
   <div class="absolute top-0 left-0 right-0 h-12 flex items-center justify-between px-5 bg-gradient-to-b from-black/70 to-transparent z-30 pointer-events-none">
     <div class="flex items-center gap-3 pointer-events-auto">
@@ -479,6 +533,7 @@
         if (showExif) loadExif()
       }}
       onToggleFilmstrip={() => (showFilmstrip = !showFilmstrip)}
+      onCopy={copyCurrentImage}
       onDelete={deleteCurrent}
       onClose={onClose}
     />

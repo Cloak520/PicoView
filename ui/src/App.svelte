@@ -163,7 +163,7 @@
 
 <div
   class="relative w-full h-full overflow-hidden select-none"
-  style="background-color: rgba(13, 13, 16, 0.90); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
+  style="background-color: rgba(14, 14, 18, 0.75);"
   ondragover={(e) => {
     e.preventDefault()
     isDragOver = true
