@@ -36,8 +36,7 @@ PicoView/
 │           ├── scanner.rs        # 并发目录扫描与文件过滤
 │           ├── decoder.rs        # 快速规格探测与解码
 │           ├── thumbnail.rs      # SIMD 缩略图生成与缓存
-│           ├── exif.rs           # EXIF / 拍摄参数解析
-│           └── db.rs             # SQLite 索引与配方持久化
+│           └── exif.rs           # EXIF / 拍摄参数解析
 ├── src-tauri/                    # Tauri v2 桌面宿主
 │   ├── Cargo.toml
 │   ├── tauri.conf.json           # 窗口尺寸、协议与权限配置
