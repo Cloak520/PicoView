@@ -8,8 +8,6 @@ export interface MediaItem {
   width: number
   height: number
   mime_type: string
-  is_starred: boolean
-  rating: number
   date_taken?: string
 }
 
@@ -24,16 +22,6 @@ export interface ExifData {
   date_time_original?: string
   latitude?: number
   longitude?: number
-}
-
-export interface ImageRecipe {
-  photo_path: string
-  crop?: [number, number, number, number]
-  rotation: number
-  brightness: number
-  contrast: number
-  saturation: number
-  is_starred: boolean
 }
 
 export type OpenTargetResult =

@@ -53,7 +53,8 @@ PicoView/
         ├── App.svelte            # 视图模式调度器
         ├── components/
         │   ├── Viewer.svelte     # 核心看图视口 (平移缩放翻页)
-        │   ├── Library.svelte    # 相册网格与文件夹浏览器
+        │   ├── Welcome.svelte    # 极简起始页 (拖拽投递与近期记录)
+        │   ├── Filmstrip.svelte  # 底部胶片导轨缩略图
         │   ├── Toolbar.svelte    # 经典悬浮毛玻璃底栏
         │   └── ExifPanel.svelte  # 拍摄参数悬浮抽屉
         └── lib/

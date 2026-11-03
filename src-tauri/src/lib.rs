@@ -1,12 +1,11 @@
 use std::path::Path;
 use std::sync::Mutex;
-use picoview_core::{ExifData, ExifParser, MediaItem, Scanner, ThumbnailGenerator};
+use picoview_core::{ExifData, ExifParser, MediaItem, Scanner};
 use serde::Serialize;
 use tauri::{Emitter, Manager};
 
 // State holder for PicoView
 pub struct AppState {
-    pub thumb_gen: ThumbnailGenerator,
     pub pending_file: Mutex<Option<String>>,
 }
 
@@ -54,37 +53,8 @@ fn open_target_path(target_path: String) -> Result<OpenTarget, String> {
 }
 
 #[tauri::command]
-fn scan_folder(folder_path: String) -> Result<Vec<MediaItem>, String> {
-    Scanner::scan_folder_siblings(&folder_path).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn get_sibling_photos(photo_path: String) -> Result<Vec<MediaItem>, String> {
-    let path = Path::new(&photo_path);
-    if let Some(parent) = path.parent() {
-        Scanner::scan_folder_siblings(parent).map_err(|e| e.to_string())
-    } else {
-        Err("Invalid photo path".to_string())
-    }
-}
-
-#[tauri::command]
 fn get_exif_data(photo_path: String) -> Result<ExifData, String> {
     ExifParser::parse(&photo_path).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn generate_thumbnail(
-    state: tauri::State<AppState>,
-    photo_path: String,
-    max_size: Option<u32>,
-) -> Result<String, String> {
-    let size = max_size.unwrap_or(320);
-    let cached_path = state
-        .thumb_gen
-        .generate_or_get(&photo_path, size)
-        .map_err(|e| e.to_string())?;
-    Ok(cached_path.to_string_lossy().to_string())
 }
 
 #[tauri::command]
@@ -113,49 +83,8 @@ fn fit_to_screen(window: tauri::WebviewWindow) {
 }
 
 #[tauri::command]
-fn toggle_fullscreen(window: tauri::WebviewWindow) -> Result<bool, String> {
-    #[cfg(target_os = "macos")]
-    {
-        fit_window_to_monitor(&window);
-        Ok(true)
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let is_fs = window.is_fullscreen().map_err(|e| e.to_string())?;
-        window.set_fullscreen(!is_fs).map_err(|e| e.to_string())?;
-        Ok(!is_fs)
-    }
-}
-
-#[tauri::command]
-fn set_fullscreen(window: tauri::WebviewWindow, fullscreen: bool) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        if fullscreen {
-            fit_window_to_monitor(&window);
-        }
-        Ok(())
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        window.set_fullscreen(fullscreen).map_err(|e| e.to_string())?;
-        Ok(())
-    }
-}
-
-#[tauri::command]
 fn exit_app(app_handle: tauri::AppHandle) {
     app_handle.exit(0);
-}
-
-#[tauri::command]
-fn get_cli_arg(state: tauri::State<AppState>) -> Option<String> {
-    if let Ok(mut lock) = state.pending_file.lock() {
-        if let Some(path) = lock.take() {
-            return Some(path);
-        }
-    }
-    std::env::args().skip(1).find(|arg| !arg.starts_with('-'))
 }
 
 #[tauri::command]
@@ -177,15 +106,11 @@ fn get_initial_target(state: tauri::State<AppState>) -> Option<OpenTarget> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app_cache_dir = std::env::temp_dir().join("picoview_cache");
-    let thumb_gen = ThumbnailGenerator::new(app_cache_dir);
-
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .manage(AppState {
-            thumb_gen,
             pending_file: Mutex::new(None),
         })
         .setup(|app| {
@@ -196,16 +121,10 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             fit_to_screen,
-            toggle_fullscreen,
-            set_fullscreen,
             exit_app,
-            get_cli_arg,
             get_initial_target,
             open_target_path,
-            scan_folder,
-            get_sibling_photos,
             get_exif_data,
-            generate_thumbnail,
             delete_to_trash,
         ])
         .build(tauri::generate_context!())
