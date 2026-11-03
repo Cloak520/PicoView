@@ -9,11 +9,13 @@
   let {
     items = [],
     currentIndex = 0,
+    isExternalOpen = false,
     onClose,
     onPickNewPhoto,
   }: {
     items: MediaItem[]
     currentIndex: number
+    isExternalOpen?: boolean
     onClose: () => void
     onPickNewPhoto?: () => void
   } = $props()
@@ -261,7 +263,7 @@
       <button
         onclick={onClose}
         class="text-neutral-400 hover:text-white p-1 rounded-md hover:bg-white/10 transition"
-        title="退出浏览 (Esc)"
+        title={isExternalOpen ? '关闭应用 (Esc)' : '退出浏览 (Esc)'}
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -372,6 +374,7 @@
       isStarred={currentItem.is_starred}
       {showExif}
       {showFilmstrip}
+      {isExternalOpen}
       onZoomIn={() => (zoom = Math.min(zoom * 1.25, 15))}
       onZoomOut={() => {
         zoom = Math.max(zoom / 1.25, 0.2)

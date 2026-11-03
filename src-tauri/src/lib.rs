@@ -93,6 +93,11 @@ fn delete_to_trash(photo_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn exit_app(app_handle: tauri::AppHandle) {
+    app_handle.exit(0);
+}
+
+#[tauri::command]
 fn get_cli_arg(state: tauri::State<AppState>) -> Option<String> {
     if let Ok(mut lock) = state.pending_file.lock() {
         if let Some(path) = lock.take() {
@@ -116,6 +121,7 @@ pub fn run() {
             pending_file: Mutex::new(None),
         })
         .invoke_handler(tauri::generate_handler![
+            exit_app,
             get_cli_arg,
             open_target_path,
             scan_folder,

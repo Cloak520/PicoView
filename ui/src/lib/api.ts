@@ -41,3 +41,7 @@ export async function generateThumbnail(photoPath: string, maxSize = 320): Promi
 export async function deleteToTrash(photoPath: string): Promise<void> {
   return invokeCommand<void>('delete_to_trash', { photoPath })
 }
+
+export async function exitApp(): Promise<void> {
+  return invokeCommand<void>('exit_app')
+}

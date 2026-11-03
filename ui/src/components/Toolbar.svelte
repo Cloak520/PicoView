@@ -5,6 +5,7 @@
     isStarred = false,
     showExif = false,
     showFilmstrip = false,
+    isExternalOpen = false,
     onZoomIn,
     onZoomOut,
     onZoomReset,
@@ -21,6 +22,7 @@
     isStarred: boolean
     showExif: boolean
     showFilmstrip: boolean
+    isExternalOpen?: boolean
     onZoomIn: () => void
     onZoomOut: () => void
     onZoomReset: () => void
@@ -38,7 +40,7 @@
   <!-- Exit / Back button -->
   <button
     onclick={onClose}
-    title="退出浏览 (Esc)"
+    title={isExternalOpen ? '关闭应用 (Esc)' : '退出浏览 (Esc)'}
     class="p-2 hover:bg-neutral-800 rounded-full hover:text-white transition"
   >
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

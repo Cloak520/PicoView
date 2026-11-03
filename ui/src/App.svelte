@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import type { MediaItem } from './lib/types'
-  import { invokeCommand, isTauri, openTargetPath } from './lib/api'
+  import { exitApp, invokeCommand, isTauri, openTargetPath } from './lib/api'
   import Welcome, { type RecentItem } from './components/Welcome.svelte'
   import Viewer from './components/Viewer.svelte'
 
@@ -11,6 +11,7 @@
   let activeIndex = $state(0)
   let recents = $state<RecentItem[]>([])
   let isDragOver = $state(false)
+  let isExternalOpen = $state(false)
 
   function loadRecents() {
     try {
@@ -87,8 +88,12 @@
   }
 
   function handleCloseViewer() {
-    photoList = []
-    activeIndex = 0
+    if (isExternalOpen) {
+      exitApp()
+    } else {
+      photoList = []
+      activeIndex = 0
+    }
   }
 
   function handleGlobalKeyDown(e: KeyboardEvent) {
@@ -107,6 +112,7 @@
       invokeCommand<string | null>('get_cli_arg')
         .then((initialArg) => {
           if (initialArg) {
+            isExternalOpen = true
             handleOpenPath(initialArg)
           }
         })
@@ -116,6 +122,7 @@
       import('@tauri-apps/api/event').then(({ listen }) => {
         listen<string>('open-file', (event) => {
           if (event.payload) {
+            isExternalOpen = true
             handleOpenPath(event.payload)
           }
         })
@@ -169,6 +176,7 @@
       <Viewer
         items={photoList}
         currentIndex={activeIndex}
+        {isExternalOpen}
         onClose={handleCloseViewer}
         onPickNewPhoto={handlePickFile}
       />
