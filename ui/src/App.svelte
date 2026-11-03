@@ -112,6 +112,15 @@
         })
         .catch(() => {})
 
+      // Listen for system "Open With" file events (macOS Finder / OS right click)
+      import('@tauri-apps/api/event').then(({ listen }) => {
+        listen<string>('open-file', (event) => {
+          if (event.payload) {
+            handleOpenPath(event.payload)
+          }
+        })
+      })
+
       // Listen for window file drop
       import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
         getCurrentWindow().onDragDropEvent((event) => {

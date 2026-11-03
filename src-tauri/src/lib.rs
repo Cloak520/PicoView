@@ -1,10 +1,13 @@
 use std::path::Path;
+use std::sync::Mutex;
 use picoview_core::{ExifData, ExifParser, MediaItem, Scanner, ThumbnailGenerator};
 use serde::Serialize;
+use tauri::{Emitter, Manager};
 
 // State holder for PicoView
 pub struct AppState {
     pub thumb_gen: ThumbnailGenerator,
+    pub pending_file: Mutex<Option<String>>,
 }
 
 #[derive(Serialize)]
@@ -90,7 +93,12 @@ fn delete_to_trash(photo_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn get_cli_arg() -> Option<String> {
+fn get_cli_arg(state: tauri::State<AppState>) -> Option<String> {
+    if let Ok(mut lock) = state.pending_file.lock() {
+        if let Some(path) = lock.take() {
+            return Some(path);
+        }
+    }
     std::env::args().skip(1).find(|arg| !arg.starts_with('-'))
 }
 
@@ -99,11 +107,14 @@ pub fn run() {
     let app_cache_dir = std::env::temp_dir().join("picoview_cache");
     let thumb_gen = ThumbnailGenerator::new(app_cache_dir);
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .manage(AppState { thumb_gen })
+        .manage(AppState {
+            thumb_gen,
+            pending_file: Mutex::new(None),
+        })
         .invoke_handler(tauri::generate_handler![
             get_cli_arg,
             open_target_path,
@@ -113,6 +124,23 @@ pub fn run() {
             generate_thumbnail,
             delete_to_trash,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running picoview tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building picoview tauri application");
+
+    app.run(|app_handle, event| {
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
+        if let tauri::RunEvent::Opened { urls } = event {
+            for url in urls {
+                if let Ok(file_path) = url.to_file_path() {
+                    let path_str = file_path.to_string_lossy().to_string();
+                    if let Some(state) = app_handle.try_state::<AppState>() {
+                        if let Ok(mut lock) = state.pending_file.lock() {
+                            *lock = Some(path_str.clone());
+                        }
+                    }
+                    let _ = app_handle.emit("open-file", path_str);
+                }
+            }
+        }
+    });
 }
