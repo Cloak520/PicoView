@@ -93,6 +93,19 @@ fn delete_to_trash(photo_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn toggle_fullscreen(window: tauri::Window) -> Result<bool, String> {
+    let is_fs = window.is_fullscreen().map_err(|e| e.to_string())?;
+    window.set_fullscreen(!is_fs).map_err(|e| e.to_string())?;
+    Ok(!is_fs)
+}
+
+#[tauri::command]
+fn set_fullscreen(window: tauri::Window, fullscreen: bool) -> Result<(), String> {
+    window.set_fullscreen(fullscreen).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 fn exit_app(app_handle: tauri::AppHandle) {
     app_handle.exit(0);
 }
@@ -121,6 +134,8 @@ pub fn run() {
             pending_file: Mutex::new(None),
         })
         .invoke_handler(tauri::generate_handler![
+            toggle_fullscreen,
+            set_fullscreen,
             exit_app,
             get_cli_arg,
             open_target_path,

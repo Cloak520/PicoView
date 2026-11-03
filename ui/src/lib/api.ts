@@ -45,3 +45,11 @@ export async function deleteToTrash(photoPath: string): Promise<void> {
 export async function exitApp(): Promise<void> {
   return invokeCommand<void>('exit_app')
 }
+
+export async function toggleFullscreen(): Promise<boolean> {
+  return invokeCommand<boolean>('toggle_fullscreen')
+}
+
+export async function setFullscreen(fullscreen: boolean): Promise<void> {
+  return invokeCommand<void>('set_fullscreen', { fullscreen })
+}

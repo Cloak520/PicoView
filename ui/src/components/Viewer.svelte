@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import type { ExifData, MediaItem } from '../lib/types'
-  import { deleteToTrash, getExifData, toAssetUrl } from '../lib/api'
+  import { deleteToTrash, getExifData, toAssetUrl, toggleFullscreen } from '../lib/api'
   import Toolbar from './Toolbar.svelte'
   import ExifPanel from './ExifPanel.svelte'
   import Filmstrip from './Filmstrip.svelte'
@@ -164,6 +164,12 @@
       case 'T':
         e.preventDefault()
         showFilmstrip = !showFilmstrip
+        break
+      case 'f':
+      case 'F':
+      case 'F11':
+        e.preventDefault()
+        toggleFullscreen()
         break
       case 'i':
       case 'I':
@@ -392,6 +398,7 @@
         if (showExif) loadExif()
       }}
       onToggleFilmstrip={() => (showFilmstrip = !showFilmstrip)}
+      onToggleFullscreen={() => toggleFullscreen()}
       onDelete={deleteCurrent}
       onClose={onClose}
     />

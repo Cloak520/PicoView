@@ -14,6 +14,7 @@
     onToggleStar,
     onToggleExif,
     onToggleFilmstrip,
+    onToggleFullscreen,
     onDelete,
     onClose,
   }: {
@@ -31,6 +32,7 @@
     onToggleStar: () => void
     onToggleExif: () => void
     onToggleFilmstrip: () => void
+    onToggleFullscreen?: () => void
     onDelete: () => void
     onClose: () => void
   } = $props()
@@ -134,6 +136,17 @@
   >
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  </button>
+
+  <!-- Fullscreen Toggle -->
+  <button
+    onclick={onToggleFullscreen}
+    title="全屏切换 (F / F11)"
+    class="p-2 hover:bg-neutral-800 rounded-full hover:text-white transition"
+  >
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
     </svg>
   </button>
 

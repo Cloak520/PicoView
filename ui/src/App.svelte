@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import type { MediaItem } from './lib/types'
-  import { exitApp, invokeCommand, isTauri, openTargetPath } from './lib/api'
+  import { exitApp, invokeCommand, isTauri, openTargetPath, setFullscreen } from './lib/api'
   import Welcome, { type RecentItem } from './components/Welcome.svelte'
   import Viewer from './components/Viewer.svelte'
 
@@ -51,6 +51,9 @@
         const current = res.data.siblings[res.data.current_index]
         if (current) {
           addRecent(current.path, current.filename)
+        }
+        if (isExternalOpen) {
+          setFullscreen(true).catch(() => {})
         }
       } else if (res.type === 'Folder') {
         if (res.data.items.length > 0) {
