@@ -3,6 +3,7 @@ name = "picoview-app"
 version = "0.1.0"
 description = "A fast, lightweight cross-platform photo viewer inspired by Google Picasa"
 edition = "2021"
+license = "Apache-2.0"
 
 [lib]
 name = "picoview_lib"

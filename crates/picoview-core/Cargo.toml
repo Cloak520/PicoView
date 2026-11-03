@@ -3,6 +3,7 @@ name = "picoview-core"
 version = "0.1.0"
 edition = "2021"
 authors = ["PicoView Team"]
+license = "Apache-2.0"
 description = "Core engine for PicoView photo viewer and library"
 
 [dependencies]

@@ -1,5 +1,7 @@
 # PicoView 📷
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 > 灵感源自经典 **Google Picasa Photo Viewer**。采用 **Rust + Tauri v2 + Svelte 5** 构建的极轻量、秒开、无边框全屏遮罩照片查看器。
 
 ---
@@ -119,3 +121,9 @@ cargo tauri build
 
 - `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`, `.bmp`, `.tiff`, `.tif`, `.avif`
 - 支持系统文件右键“使用 PicoView 打开”直接全屏秒开。
+
+---
+
+## 📜 开源协议
+
+本项目基于 [Apache License 2.0](LICENSE) 协议开源。

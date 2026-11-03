@@ -2,6 +2,7 @@
   "name": "picoview",
   "private": true,
   "version": "0.1.0",
+  "license": "Apache-2.0",
   "description": "Cross-platform photo viewer and manager inspired by Google Picasa",
   "scripts": {
     "dev": "npm --prefix ui run dev",
