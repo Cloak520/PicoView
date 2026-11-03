@@ -30,7 +30,7 @@
   let startY = $state(0)
   let showExif = $state(false)
   let showFilmstrip = $state(false)
-  let isImageLoaded = $state(false)
+  let hasImageError = $state(false)
   let exifData = $state<ExifData | null>(null)
   let viewportWidth = $state(0)
   let viewportHeight = $state(0)
@@ -40,15 +40,21 @@
   // Sync activeIndex with parent currentIndex prop
   $effect(() => {
     activeIndex = currentIndex
+    imgNaturalWidth = 0
+    imgNaturalHeight = 0
+    hasImageError = false
   })
 
-  // When activeIndex changes, reset load state and initialize dimensions
-  $effect(() => {
-    const item = items[activeIndex]
-    isImageLoaded = false
-    imgNaturalWidth = item?.width ?? 0
-    imgNaturalHeight = item?.height ?? 0
-  })
+  function setActivePhoto(idx: number) {
+    if (idx >= 0 && idx < items.length) {
+      activeIndex = idx
+      imgNaturalWidth = 0
+      imgNaturalHeight = 0
+      hasImageError = false
+      resetViewport(true)
+      loadExif()
+    }
+  }
 
   const currentItem = $derived(items[activeIndex])
   const prevItem = $derived(activeIndex > 0 ? items[activeIndex - 1] : null)
@@ -100,17 +106,13 @@
 
   function nextPhoto() {
     if (activeIndex < items.length - 1) {
-      activeIndex++
-      resetViewport(true)
-      loadExif()
+      setActivePhoto(activeIndex + 1)
     }
   }
 
   function prevPhoto() {
     if (activeIndex > 0) {
-      activeIndex--
-      resetViewport(true)
-      loadExif()
+      setActivePhoto(activeIndex - 1)
     }
   }
 
@@ -265,7 +267,11 @@
         if (activeIndex >= items.length) {
           activeIndex = Math.max(0, items.length - 1)
         }
+        imgNaturalWidth = 0
+        imgNaturalHeight = 0
+        hasImageError = false
         resetViewport()
+        loadExif()
       } catch (err) {
         alert(`删除失败: ${err}`)
       }
@@ -363,15 +369,14 @@
         draggable="false"
         ondragstart={(e) => e.preventDefault()}
         onload={(e) => {
-          isImageLoaded = true
+          hasImageError = false
           imgNaturalWidth = e.currentTarget.naturalWidth
           imgNaturalHeight = e.currentTarget.naturalHeight
-          if (currentItem) {
-            currentItem.width = e.currentTarget.naturalWidth
-            currentItem.height = e.currentTarget.naturalHeight
-          }
         }}
-        class="max-w-full max-h-full min-w-0 min-h-0 object-contain pointer-events-none select-none transition-opacity duration-150 {isImageLoaded ? 'opacity-100' : 'opacity-0'}"
+        onerror={() => {
+          hasImageError = true
+        }}
+        class="max-w-full max-h-full min-w-0 min-h-0 object-contain pointer-events-none select-none"
         style="
           -webkit-user-drag: none;
           user-select: none;
@@ -381,9 +386,11 @@
           transition: {isDragging ? 'none' : 'transform 0.15s cubic-bezier(0, 0, 0.2, 1)'};
         "
       />
-      {#if !isImageLoaded}
+      {#if hasImageError}
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div class="w-6 h-6 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+          <div class="px-4 py-2 bg-neutral-900/90 rounded-lg text-neutral-400 text-xs border border-neutral-800">
+            无法解析或打开该图片格式
+          </div>
         </div>
       {/if}
     {:else}
@@ -428,7 +435,13 @@
 
   <!-- Floating EXIF Inspector -->
   {#if showExif && currentItem}
-    <ExifPanel item={currentItem} exif={exifData} onClose={() => (showExif = false)} />
+    <ExifPanel
+      item={currentItem}
+      exif={exifData}
+      naturalWidth={imgNaturalWidth}
+      naturalHeight={imgNaturalHeight}
+      onClose={() => (showExif = false)}
+    />
   {/if}
 
   <!-- Floating Bottom Filmstrip Thumbnails Drawer -->
@@ -437,11 +450,7 @@
       <Filmstrip
         {items}
         {activeIndex}
-        onSelect={(idx) => {
-          activeIndex = idx
-          resetViewport(true)
-          loadExif()
-        }}
+        onSelect={(idx) => setActivePhoto(idx)}
       />
     </div>
   {/if}

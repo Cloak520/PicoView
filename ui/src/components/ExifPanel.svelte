@@ -1,7 +1,22 @@
 <script lang="ts">
   import type { ExifData, MediaItem } from '../lib/types'
 
-  let { item, exif, onClose }: { item: MediaItem; exif: ExifData | null; onClose: () => void } = $props()
+  let {
+    item,
+    exif,
+    naturalWidth = 0,
+    naturalHeight = 0,
+    onClose,
+  }: {
+    item: MediaItem
+    exif: ExifData | null
+    naturalWidth?: number
+    naturalHeight?: number
+    onClose: () => void
+  } = $props()
+
+  const displayWidth = $derived(naturalWidth || item.width || 0)
+  const displayHeight = $derived(naturalHeight || item.height || 0)
 
   function formatBytes(bytes: number) {
     if (bytes === 0) return '0 B'
@@ -30,7 +45,9 @@
     <div class="grid grid-cols-2 gap-2">
       <div>
         <span class="text-neutral-500 block mb-0.5">尺寸分辨率</span>
-        <span class="text-neutral-200">{item.width} × {item.height}</span>
+        <span class="text-neutral-200">
+          {displayWidth && displayHeight ? `${displayWidth} × ${displayHeight}` : '未知'}
+        </span>
       </div>
       <div>
         <span class="text-neutral-500 block mb-0.5">文件大小</span>
