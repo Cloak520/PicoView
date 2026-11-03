@@ -178,11 +178,6 @@
         showExif = !showExif
         if (showExif) loadExif()
         break
-      case 's':
-      case 'S':
-        e.preventDefault()
-        toggleStar()
-        break
       case 'Delete':
       case 'Backspace':
         e.preventDefault()
@@ -205,11 +200,6 @@
     } catch {
       exifData = null
     }
-  }
-
-  function toggleStar() {
-    if (!currentItem) return
-    currentItem.is_starred = !currentItem.is_starred
   }
 
   async function deleteCurrent() {
@@ -399,7 +389,6 @@
     <Toolbar
       {zoom}
       {rotation}
-      isStarred={currentItem.is_starred}
       {showExif}
       {showFilmstrip}
       {isExternalOpen}
@@ -414,7 +403,6 @@
       onZoomReset={resetViewport}
       onRotateLeft={() => (rotation = (rotation - 90) % 360)}
       onRotateRight={() => (rotation = (rotation + 90) % 360)}
-      onToggleStar={toggleStar}
       onToggleExif={() => {
         showExif = !showExif
         if (showExif) loadExif()

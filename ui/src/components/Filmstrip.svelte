@@ -61,9 +61,6 @@
           loading="lazy"
           class="w-full h-full object-cover pointer-events-none"
         />
-        {#if item.is_starred}
-          <div class="absolute top-1 right-1 text-[10px] text-amber-400 drop-shadow">★</div>
-        {/if}
       </button>
     {/each}
   </div>
