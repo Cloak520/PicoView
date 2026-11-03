@@ -32,10 +32,8 @@ PicoView/
 │       ├── Cargo.toml
 │       └── src/
 │           ├── lib.rs
-│           ├── models.rs         # 核心数据模型 (MediaItem, ExifData, Recipe)
-│           ├── scanner.rs        # 并发目录扫描与文件过滤
-│           ├── decoder.rs        # 快速规格探测与解码
-│           ├── thumbnail.rs      # SIMD 缩略图生成与缓存
+│           ├── models.rs         # 核心数据模型 (MediaItem, ExifData)
+│           ├── scanner.rs        # 1ms 秒级同级目录扫描与排序
 │           └── exif.rs           # EXIF / 拍摄参数解析
 ├── src-tauri/                    # Tauri v2 桌面宿主
 │   ├── Cargo.toml

@@ -1,6 +1,5 @@
 use std::path::Path;
 use anyhow::Result;
-use jwalk::WalkDir;
 
 use crate::models::MediaItem;
 
@@ -41,28 +40,6 @@ impl Scanner {
         Ok(items)
     }
 
-    /// Parallel recursive scan of entire directories using jwalk
-    pub fn scan_directory_parallel<P: AsRef<Path>>(root_dir: P) -> Result<Vec<MediaItem>> {
-        let mut items = Vec::new();
-
-        for entry in WalkDir::new(root_dir)
-            .sort(true)
-            .into_iter()
-            .flatten()
-        {
-            if entry.file_type.is_file() {
-                let p = entry.path();
-                if Self::is_image_file(&p) {
-                    if let Some(item) = Self::path_to_media_item(&p) {
-                        items.push(item);
-                    }
-                }
-            }
-        }
-
-        Ok(items)
-    }
-
     /// Construct MediaItem from file metadata
     pub fn path_to_media_item(path: &Path) -> Option<MediaItem> {
         let metadata = std::fs::metadata(path).ok()?;
@@ -98,8 +75,6 @@ impl Scanner {
             width: 0,
             height: 0,
             mime_type,
-            is_starred: false,
-            rating: 0,
             date_taken: None,
         })
     }

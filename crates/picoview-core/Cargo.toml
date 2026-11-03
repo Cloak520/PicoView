@@ -6,13 +6,6 @@ authors = ["PicoView Team"]
 description = "Core engine for PicoView photo viewer and library"
 
 [dependencies]
-image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp"] }
-fast_image_resize = "5.0"
 kamadak-exif = "0.5"
-jwalk = "0.8"
-tokio = { version = "1.38", features = ["sync", "rt", "fs", "macros"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "1.0"
 anyhow = "1.0"
-trash = "5.1"
