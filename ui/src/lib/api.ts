@@ -1,11 +1,10 @@
+import { convertFileSrc, invoke, isTauri } from '@tauri-apps/api/core'
 import type { ExifData, MediaItem, OpenTargetResult } from './types'
 
-// Check if running inside Tauri
-export const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
+export { isTauri }
 
 export async function invokeCommand<T>(cmd: string, args: Record<string, any> = {}): Promise<T> {
   if (isTauri()) {
-    const { invoke } = await import('@tauri-apps/api/core')
     return invoke<T>(cmd, args)
   }
   console.warn(`[Mock] invokeCommand called: ${cmd}`, args)
@@ -14,14 +13,7 @@ export async function invokeCommand<T>(cmd: string, args: Record<string, any> = 
 
 export function toAssetUrl(filePath: string): string {
   if (isTauri()) {
-    // In Tauri v2, convertFileSrc converts absolute paths to asset:// protocol
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { convertFileSrc } = (window as any).__TAURI_INTERNALS__ || {}
-    if (convertFileSrc) {
-      return convertFileSrc(filePath)
-    }
-    // Fallback standard Tauri v2 asset URL
-    return `asset://localhost/${encodeURIComponent(filePath)}`
+    return convertFileSrc(filePath)
   }
   return filePath
 }

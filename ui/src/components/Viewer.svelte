@@ -16,10 +16,6 @@
   } = $props()
 
   let activeIndex = $state(0)
-
-  $effect(() => {
-    activeIndex = currentIndex
-  })
   let zoom = $state(1)
   let rotation = $state(0)
   let panX = $state(0)
@@ -29,6 +25,10 @@
   let startY = $state(0)
   let showExif = $state(false)
   let exifData = $state<ExifData | null>(null)
+
+  $effect(() => {
+    activeIndex = currentIndex
+  })
 
   const currentItem = $derived(items[activeIndex])
   const prevItem = $derived(activeIndex > 0 ? items[activeIndex - 1] : null)
@@ -74,11 +74,9 @@
   function handleMouseDown(e: MouseEvent) {
     if (e.button === 0) {
       e.preventDefault()
-      if (zoom > 1) {
-        isDragging = true
-        startX = e.clientX - panX
-        startY = e.clientY - panY
-      }
+      isDragging = true
+      startX = e.clientX - panX
+      startY = e.clientY - panY
     }
   }
 
@@ -91,7 +89,14 @@
   }
 
   function handleMouseUp() {
-    isDragging = false
+    if (isDragging) {
+      isDragging = false
+      // If zoomed out to <= 1, smoothly snap back to center
+      if (zoom <= 1) {
+        panX = 0
+        panY = 0
+      }
+    }
   }
 
   function handleDoubleClick() {
@@ -107,26 +112,36 @@
       case 'ArrowRight':
       case 'PageDown':
       case ' ':
+        e.preventDefault()
         nextPhoto()
         break
       case 'ArrowLeft':
       case 'PageUp':
+        e.preventDefault()
         prevPhoto()
         break
       case 'ArrowUp':
       case '+':
       case '=':
+        e.preventDefault()
         zoom = Math.min(zoom * 1.2, 15)
         break
       case 'ArrowDown':
       case '-':
+        e.preventDefault()
         zoom = Math.max(zoom / 1.2, 0.2)
+        if (zoom <= 1) {
+          panX = 0
+          panY = 0
+        }
         break
       case '0':
+        e.preventDefault()
         resetViewport()
         break
       case 'r':
       case 'R':
+        e.preventDefault()
         if (e.shiftKey) {
           rotation = (rotation - 90) % 360
         } else {
@@ -135,20 +150,25 @@
         break
       case 'i':
       case 'I':
+        e.preventDefault()
         showExif = !showExif
         if (showExif) loadExif()
         break
       case 's':
       case 'S':
+        e.preventDefault()
         toggleStar()
         break
       case 'Delete':
       case 'Backspace':
+        e.preventDefault()
         deleteCurrent()
         break
       case 'Escape':
       case 'l':
       case 'L':
+        e.preventDefault()
+        e.stopPropagation()
         onClose()
         break
     }
@@ -193,8 +213,16 @@
 
   onMount(() => {
     window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('mouseup', handleMouseUp)
+
+    // Globally suppress browser HTML5 drag ghosting
+    const suppressDrag = (e: DragEvent) => e.preventDefault()
+    window.addEventListener('dragstart', suppressDrag)
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('mouseup', handleMouseUp)
+      window.removeEventListener('dragstart', suppressDrag)
     }
   })
 </script>
@@ -248,11 +276,14 @@
         alt={currentItem.filename}
         draggable="false"
         ondragstart={(e) => e.preventDefault()}
-        class="max-w-full max-h-full object-contain pointer-events-none transition-transform duration-75 select-none"
+        class="max-w-full max-h-full object-contain pointer-events-none select-none"
         style="
           -webkit-user-drag: none;
           user-select: none;
-          transform: translate({panX}px, {panY}px) scale({zoom}) rotate({rotation}deg);
+          -webkit-user-select: none;
+          will-change: transform;
+          transform: translate3d({panX}px, {panY}px, 0) scale({zoom}) rotate({rotation}deg);
+          transition: {isDragging ? 'none' : 'transform 0.15s cubic-bezier(0, 0, 0.2, 1)'};
         "
       />
     {:else}
@@ -308,7 +339,13 @@
       isStarred={currentItem.is_starred}
       {showExif}
       onZoomIn={() => (zoom = Math.min(zoom * 1.25, 15))}
-      onZoomOut={() => (zoom = Math.max(zoom / 1.25, 0.2))}
+      onZoomOut={() => {
+        zoom = Math.max(zoom / 1.25, 0.2)
+        if (zoom <= 1) {
+          panX = 0
+          panY = 0
+        }
+      }}
       onZoomReset={resetViewport}
       onRotateLeft={() => (rotation = (rotation - 90) % 360)}
       onRotateRight={() => (rotation = (rotation + 90) % 360)}

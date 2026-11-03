@@ -202,6 +202,7 @@
         {#each filteredItems as item, idx (item.path)}
           <div
             class="group relative bg-neutral-900 rounded-lg overflow-hidden border border-neutral-800/80 hover:border-neutral-600 transition shadow-sm hover:shadow-md cursor-pointer flex flex-col"
+            style="content-visibility: auto; contain-intrinsic-size: {thumbSize}px {thumbSize + 40}px;"
             onclick={() => onSelectPhoto(filteredItems, idx)}
             role="button"
             tabindex="0"

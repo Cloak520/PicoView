@@ -101,8 +101,12 @@
   role="region"
   aria-label="PicoView Main"
 >
-  <!-- Library View: preserved in DOM so scroll and folder contents are never lost on ESC -->
-  <div class="w-full h-full" class:hidden={mode !== 'library'}>
+  <!-- Library View: permanently kept in layout tree so scroll and thumbnails are warm with ZERO ESC lag -->
+  <div
+    class="w-full h-full"
+    class:pointer-events-none={mode === 'viewer'}
+    aria-hidden={mode === 'viewer'}
+  >
     <Library
       bind:items={libraryItems}
       bind:currentFolderPath
@@ -114,7 +118,7 @@
 
   <!-- Viewer View: rendered when in viewer mode -->
   {#if mode === 'viewer'}
-    <div class="absolute inset-0 z-40 bg-[#121214]">
+    <div class="fixed inset-0 z-40 bg-[#121214]">
       <Viewer
         items={photoList}
         currentIndex={activeIndex}
