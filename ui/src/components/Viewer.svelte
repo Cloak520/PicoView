@@ -421,6 +421,7 @@
         src={toAssetUrl(currentItem.path)}
         alt={currentItem.filename}
         draggable="false"
+        decoding="async"
         ondragstart={(e) => e.preventDefault()}
         onload={(e) => {
           hasImageError = false
@@ -449,16 +450,6 @@
       {/if}
     {:else}
       <div class="text-neutral-500 text-sm">没有选中的图片</div>
-    {/if}
-  </div>
-
-  <!-- Adjacent Photos Silent Preloader -->
-  <div class="hidden">
-    {#if prevItem}
-      <img src={toAssetUrl(prevItem.path)} alt="preload-prev" />
-    {/if}
-    {#if nextItem}
-      <img src={toAssetUrl(nextItem.path)} alt="preload-next" />
     {/if}
   </div>
 

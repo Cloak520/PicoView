@@ -50,17 +50,25 @@
     style="scrollbar-width: none;"
   >
     {#each items as item, idx (item.path)}
+      {@const isNear = Math.abs(idx - activeIndex) <= 15}
       <button
         onclick={() => onSelect(idx)}
         class="relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all duration-150 group {idx === activeIndex ? 'border-blue-500 scale-105 shadow-lg shadow-blue-500/30' : 'border-transparent opacity-60 hover:opacity-100 hover:border-neutral-500'}"
         title={item.filename}
       >
-        <img
-          src={toAssetUrl(item.path)}
-          alt={item.filename}
-          loading="lazy"
-          class="w-full h-full object-cover pointer-events-none"
-        />
+        {#if isNear}
+          <img
+            src={toAssetUrl(item.path)}
+            alt={item.filename}
+            loading="lazy"
+            decoding="async"
+            class="w-full h-full object-cover pointer-events-none"
+          />
+        {:else}
+          <div class="w-full h-full bg-neutral-800/40 flex items-center justify-center text-neutral-600 text-xs">
+            🖼️
+          </div>
+        {/if}
       </button>
     {/each}
   </div>
