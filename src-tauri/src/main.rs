@@ -5,15 +5,13 @@ fn main() {
     #[cfg(target_os = "windows")]
     {
         // 针对 Windows WebView2 启动内存占用深度优化：
-        // 1. --renderer-process-limit=1: 限制渲染进程为 1，防止多渲染进程膨胀
-        // 2. --js-flags=--max-old-space-size=128: 限制 V8 堆内存上限为 128MB，促使其更积极回收垃圾
-        // 3. --disable-features=IsolateOrigins,site-per-process: 禁用跨域隔离多进程派生
-        // 4. --disk-cache-size / --media-cache-size: 压缩缓存上限为 10MB
-        // 5. 禁用 Edge 默认扩展、同步、遥测与后台服务
+        // 1. --js-flags=--max-old-space-size=128: 限制 V8 堆内存上限为 128MB，促使其更积极回收垃圾
+        // 2. --disable-features=IsolateOrigins,site-per-process: 禁用跨域隔离多进程派生
+        // 3. --disk-cache-size / --media-cache-size: 压缩缓存上限为 10MB
+        // 4. 禁用 Edge 默认扩展、同步、遥测与后台服务
         let low_memory_args = [
             "--js-flags=--max-old-space-size=128",
             "--disable-features=IsolateOrigins,site-per-process,AudioServiceOutOfProcess",
-            "--renderer-process-limit=1",
             "--disable-gpu-shader-disk-cache",
             "--disk-cache-size=10485760",
             "--media-cache-size=10485760",

@@ -13,6 +13,7 @@
   let recents = $state<RecentItem[]>([])
   let isDragOver = $state(false)
   let isExternalOpen = $state(false)
+  let isCheckingInitial = $state(true)
 
   function loadRecents() {
     try {
@@ -125,6 +126,9 @@
           }
         })
         .catch(() => {})
+        .finally(() => {
+          isCheckingInitial = false
+        })
 
       // Listen for system "Open With" file events (macOS Finder / OS right click)
       import('@tauri-apps/api/event').then(({ listen }) => {
@@ -153,6 +157,8 @@
           }
         })
       })
+    } else {
+      isCheckingInitial = false
     }
 
     return () => {
@@ -190,7 +196,7 @@
         onPickNewPhoto={handlePickFile}
       />
     </div>
-  {:else}
+  {:else if !isCheckingInitial}
     <!-- Minimalist Welcome Canvas -->
     <Welcome
       {recents}
